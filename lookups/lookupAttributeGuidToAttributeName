@@ -1,3 +1,6 @@
+// lookup to map object class guids to names in Windows Security Events
+// produced from Windows Server 2016 functional level domain using PowerShell
+// Get-ADObject -SearchBase "cn=schema,cn=configuration,dc=internal,dc=govt" -filter * -properties SchemaIDGUID | Where ObjectClass -eq attributeSchema | foreach {$Name=$_.Name; $SchemaIdGuid = [guid]$_.SchemaIDGuid;"$Name,$SchemaIdGuid"}
 datatable (AttributeClassName:string, AttributeClassGuid:string) [ 
 , "accountNameHistory", "031952ec-3b72-11d2-90cc-00c04fd91ab1"
 , "aCSAggregateTokenRatePerUser", "7f56127d-5301-11d1-a9c5-0000f80367c1"
