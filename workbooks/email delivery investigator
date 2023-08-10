@@ -1,0 +1,189 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Email Delivery Investigator\n---\n\nThis workbook will allow you to determine the status of a message as it moves through the email environment."
+      },
+      "name": "text - 2"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "376f8c5f-f773-473a-a759-179d4fd5484b",
+            "version": "KqlParameterItem/1.0",
+            "name": "Timeframe",
+            "type": 4,
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 172800000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 1209600000
+                },
+                {
+                  "durationMs": 2419200000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 5184000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": {
+              "durationMs": 900000
+            }
+          },
+          {
+            "id": "433d6c87-1974-421c-8ebc-e9e2e4b7a73b",
+            "version": "KqlParameterItem/1.0",
+            "name": "Sender",
+            "type": 1,
+            "description": "Enter the sender email address (or part thereof)",
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": ""
+          },
+          {
+            "id": "a69efab2-d71b-4f0d-9e76-60f3f974de88",
+            "version": "KqlParameterItem/1.0",
+            "name": "Recipient",
+            "type": 1,
+            "description": "Enter the recipient email address (or part thereof)",
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "value": ""
+          },
+          {
+            "id": "56b01fcd-8e9c-4855-b2cb-85b048b54e2f",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subject",
+            "type": 1,
+            "description": "Enter the subject (or part thereof)"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Verizon email gateway logs\r\nThese logs are from the Verizon emal gateway. They are usually the first or last logs regardng a message"
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "CiscoSEGEvent\r\n| where TimeGenerated {Timeframe}\r\n    and RecipientAddress contains \"{Recipient}\"\r\n    and (\r\n        MailFromAddress contains \"{Sender}\"\r\n        or ReplyToAddress contains \"{Sender}\"\r\n    )\r\n    and Subject contains \"{Subject}\"\r\n| order by TimeGenerated desc\r\n| project-reorder TimeGenerated\r\n    , MailFromAddress\r\n    , RecipientAddress\r\n    , Subject\r\n    , ReplyToAddress\r\n    , DvcAction\r\n    , EventOriginalUid\r\n    , AntiSpamVerdict\r\n    , AntiVirusVerdict\r\n    , AmpVerdict\r\n    , DkimVerdict\r\n    , DmarcVerdict\r\n    , SrcIp\r\n| project-away SenderFromAddress\r\n| project-rename Action = DvcAction\r\n    , InternetMsgId = EventOriginalUid\r\n",
+              "size": 0,
+              "title": "Verizon Gateway Single Line Logs",
+              "exportedParameters": [
+                {
+                  "fieldName": "InternetMsgId",
+                  "parameterName": "InternetMsgId",
+                  "parameterType": 1
+                },
+                {
+                  "fieldName": "EventStartTime",
+                  "parameterName": "EventStartTime",
+                  "parameterType": 1
+                },
+                {
+                  "fieldName": "EventEndTime",
+                  "parameterName": "EventEndTime",
+                  "parameterType": 1
+                },
+                {
+                  "fieldName": "ESAMID",
+                  "parameterName": "MID",
+                  "parameterType": 1
+                }
+              ],
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "rowLimit": 5000
+              }
+            },
+            "name": "CiscoSEGEvent"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let StartTime = datetime_add('minute', -15, todatetime(\"{EventStartTime}\"));\r\nlet EndTime = datetime_add('minute', 15,todatetime(\"{EventEndTime}\"));\r\nSyslog\r\n| where Facility =~ \"auth\" and SyslogMessage startswith \"ACMA-Syslog\"\r\n| extend time_wrongness = datetime_diff('hour',TimeGenerated,datetime_local_to_utc(TimeGenerated,\"Australia/Canberra\"))\r\n| extend TimeGenerated = datetime_add('hour',time_wrongness,TimeGenerated)\r\n| where TimeGenerated between (StartTime .. EndTime)\r\n| extend SyslogMessage = replace_string(SyslogMessage,\"ACMA-Syslog-165.191.2.102: \",\"\")\r\n    , ICID = extract(\"ICID (\\\\d+)\",1,SyslogMessage)\r\n    , MID = extract(\"MID (\\\\d+)\",1,SyslogMessage)\r\n    , DCID = extract(\"DCID (\\\\d+)\",1,SyslogMessage)\r\n| project TimeGenerated, ICID, MID, SyslogMessage\r\n| where isnotempty(MID)\r\n| summarize Events=make_set(strcat(tostring(TimeGenerated), \" | \", SyslogMessage),150) by MID\r\n| where MID == \"{MID}\"\r\n| project Events\r\n| mvexpand Events\r\n",
+              "size": 0,
+              "title": "Verizon Gateway Detailed Logs",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table"
+            },
+            "name": "Verizon Detailed Logs"
+          }
+        ]
+      },
+      "name": "Verizon Logs"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/0baecc5e-6333-4ff6-bdf2-f2c045143527/resourcegroups/ac1-prd-commonsecurity-arg-001/providers/microsoft.operationalinsights/workspaces/ac1-prd-acs-asw-001"
+  ],
+  "fromTemplateId": "sentinel-UserWorkbook",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
