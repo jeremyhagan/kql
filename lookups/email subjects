@@ -1,0 +1,100 @@
+Syslog
+| where (SyslogMessage startswith "Customer-Syslog-165.191.2.102" or SyslogMessage startswith "165.191.2.102") and Facility =~ "mail"
+// Fix the problem where the timestamps are in UTC, but Log Analytics is interpreting them as local time
+| extend time_wrongness = datetime_diff('hour',TimeGenerated,datetime_local_to_utc(TimeGenerated,"Australia/Canberra"))
+| extend TimeGenerated = datetime_add('hour',time_wrongness,TimeGenerated)
+// as you were
+| project TimeGenerated,SyslogMessage, ingestion_time()
+| extend syslog_split_temp = split(SyslogMessage,"|")
+| extend DeviceVendor = tostring(syslog_split_temp[1])
+    , DeviceProduct = tostring(syslog_split_temp[2])
+    , DeviceVersion = tostring(syslog_split_temp[3])
+    , DeviceEventClassID = tostring(syslog_split_temp[4])
+    , DeviceEventName = tostring(syslog_split_temp[5])
+    , DeviceSeverity = tostring(syslog_split_temp[6])
+    // Some of the fileds in the CEF event may have a pipe "|" and the above split malforms it. This line joins it back together again
+    , CefEvent = strcat_array(array_slice(syslog_split_temp,7,-1),"|")
+// The following line is required to remove the "=" sign from any FromAddresses.
+// This prevents the parse-kv command from correctly extracting the MailFrom address.
+// Once the field is extracted, then the value will be set back to what it was
+// if it contained any "=" signs.
+| extend suser_temp = extract(@"suser=\S*=\S*\s",0,CefEvent)
+| extend suser_new = replace_string(suser_temp,"\\=","")
+| extend CefEvent = iff(isnotempty(suser_temp),replace_string(CefEvent,suser_temp,suser_new),CefEvent)
+// The following code is used to handle base64 encoded subject lines
+| extend subject_temp = extract(@"msg='([^']*)'",1,CefEvent)
+//| extend subject_temp = replace_string(subject_temp,@"\=?utf-8?B?","")
+//| extend subject_temp = replace_string(subject_temp,@"\\r\\n","")
+| parse-kv CefEvent as (act:string
+    , cfp1:string
+    , cfp1Label:string
+    , cs1:string
+    , cs1Label:string
+    , cs2:string
+    , cs2Label:string
+    , cs3:string
+    , cs3Label:string
+    , cs4:string
+    , cs4Label:string
+    , cs5:string
+    , cs5Label:string
+    , cs6:string
+    , cs6Label:string
+    , deviceDirection:string
+    , deviceExternalId:string
+    , deviceInboundInterface:string
+    , deviceOutboundInterface:string
+    , duser:string
+    , dvc:string
+    , endTime:datetime
+    , ESAAMPVerdict:string
+    , ESAASVerdict:string
+    , ESAAttachmentDetails:string
+    , ESAAVVerdict:string
+    , ESACFVerdict:string
+    , ESADaneHost:string
+    , ESADaneStatus:string
+    , ESADCID:long
+    , ESADHASource:string
+    , ESADKIMVerdict:string
+    , ESADLPVerdict:string
+    , ESADMARCVerdict:string
+    , ESAFinalActionDetails:string
+    , ESAFriendlyFrom:string
+    , ESAGMVerdict:string
+    , ESAHeloDomain:string
+    , ESAHeloIP:string
+    , ESAICID:long
+    , ESAMailFlowPolicy:string
+    , ESAMARAction:string
+    , ESAMID:string
+    , ESAMsgSize:string
+    , ESAMsgTooBigFromSender:string
+    , ESAOFVerdict:string
+    , ESARateLimitedIP:string
+    , ESAReplyTo:string
+    , ESASDRDomainAge:string
+    , ESASenderGroup:string
+    , ESASPFVerdict:string
+    , ESATLSInCipher:string
+    , ESATLSInConnStatus:string
+    , ESATLSInProtocol:string
+    , ESATLSOutCipher:string
+    , ESATLSOutConnStatus:string
+    , ESATLSOutProtocol:string
+    , ESAURLDetails:string
+    , ESAStatus:string
+    , msg:string
+    , sourceAddress:string
+    , sourceHostName:string
+    , startTime:datetime
+    , suser:string
+) with (pair_delimiter=' ', kv_delimiter='=', greedy=true)
+| where subject_temp has "utf-8?B"
+| project-reorder msg,subject_temp,suser,duser,act
+| extend b64 = case(
+    //subject_temp has "utf-8?B", replace_regex(replace_regex(replace_regex(subject_temp,@"(?i)\\=\?utf-8\?B\?",""),@"\\\\r\\\\n.+",""),@"\\",""),
+    subject_temp has "utf-8?B", base64_decode_tostring(replace_string(extract(@"(?i)utf-8\?B\?([^\?]+)\?",1,subject_temp),@"\","")),
+    subject_temp
+)
+| project-reorder b64
