@@ -119,7 +119,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## Verizon email gateway logs\r\nThese logs are from the Verizon emal gateway. They are usually the first or last logs regardng a message"
+              "json": "## Verizon email gateway logs\r\nThese logs are from the Verizon emal gateway. They are usually the first or last logs regardng a message\r\n\r\nClick on a message below to show the detailed syslog info for that message"
             },
             "name": "text - 0"
           },
@@ -141,8 +141,7 @@
                   "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
                   "timeContext": {
                     "durationMs": 86400000
-                  },
-                  "value": "hide"
+                  }
                 }
               ],
               "style": "pills",
@@ -241,7 +240,7 @@
           {
             "type": 1,
             "content": {
-              "json": "## Exchange Online Logs\r\nThese logs come from Exchange Online. They are subject to up to 15 minutes of ingestion latency."
+              "json": "## Exchange Online Logs\r\nThese logs come from Exchange Online. They are subject to up to 15 minutes of ingestion latency.\r\n\r\nClick on a message below to show attachment info and post delivery events (EG: ZAP)"
             },
             "name": "text - 0"
           },
@@ -264,8 +263,7 @@
                   "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
                   "timeContext": {
                     "durationMs": 86400000
-                  },
-                  "value": "hide"
+                  }
                 }
               ],
               "style": "pills",
@@ -361,47 +359,94 @@
           {
             "type": 1,
             "content": {
+              "json": "## Exchange on-premises logs\r\nThese are the same as what you get from the Get-MessageTrackingLog Exchange CmdLet.\r\n\r\nClick on a message below to get all tracking logs for that message"
+            },
+            "name": "text - 5"
+          },
+          {
+            "type": 1,
+            "content": {
               "json": ""
             },
             "name": "text - 0"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "4f2622a9-2ecd-4763-830f-cdc209419d21",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "onprem_show",
+                  "label": "Show/Hide",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 6"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "ExchangeServerMessageTracking\r\n| where TimeGenerated {Timeframe}\r\n    and RecipientAddress contains \"{Recipient}\"\r\n    and (\r\n        SenderFromAddress contains \"{Sender}\"\r\n        or ReturnPath contains \"{Sender}\"\r\n    )\r\n    and MessageSubject contains \"{Subject}\"\r\n| order by TimeGenerated desc\r\n| project-away _ResourceId\r\n    , TenantId\r\n    , Type\r\n| project-reorder TimeGenerated\r\n    , Computer\r\n    , SenderFromAddress\r\n    , RecipientAddress\r\n    , MessageSubject\r\n    , ReturnPath\r\n    , EventID\r\n    , messageID\r\n    , Source\r\n    , ConnectorID\r\n    , OriginalClientIP\r\n    , OriginalServerIP\r\n    , CustomData\r\n| project-rename Subject = MessageSubject\r\n",
+              "size": 0,
+              "title": "Message Tracking Logs",
+              "timeContextFromParameter": "Timeframe",
+              "exportFieldName": "NetworkMessageID",
+              "exportParameterName": "NetworkMessageID",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "rowLimit": 5000
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "onprem_show",
+              "comparison": "isEqualTo",
+              "value": "show"
+            },
+            "name": "Message Tracking Logs"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "ExchangeServerMessageTracking\r\n| where NetworkMessageID == \"{NetworkMessageID}\"\r\n| order by TimeGenerated asc\r\n| project-reorder TimeGenerated\r\n    , Computer\r\n    , SenderFromAddress\r\n    , RecipientAddress\r\n    , MessageSubject\r\n    , ReturnPath\r\n    , EventID\r\n    , messageID\r\n    , Source\r\n    , ConnectorID\r\n    , OriginalClientIP\r\n    , OriginalServerIP\r\n    , CustomData\r\n",
+              "size": 0,
+              "title": "Single message focus",
+              "timeContextFromParameter": "Timeframe",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "conditionalVisibilities": [
+              {
+                "parameterName": "NetworkMessageID",
+                "comparison": "isNotEqualTo"
+              },
+              {
+                "parameterName": "onprem_show",
+                "comparison": "isEqualTo",
+                "value": "show"
+              }
+            ],
+            "name": "Single message focus"
           }
         ]
       },
       "name": "Exchange On-premises Logs"
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "## Exchange on-premises logs\r\nThese are the same as what you get from the Get-MessageTrackingLog Exchange CmdLet"
-      },
-      "name": "text - 5"
-    },
-    {
-      "type": 9,
-      "content": {
-        "version": "KqlParameterItem/1.0",
-        "parameters": [
-          {
-            "id": "4f2622a9-2ecd-4763-830f-cdc209419d21",
-            "version": "KqlParameterItem/1.0",
-            "name": "onprem_show",
-            "label": "Show/Hide",
-            "type": 10,
-            "isRequired": true,
-            "typeSettings": {
-              "additionalResourceOptions": []
-            },
-            "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
-            "timeContext": {
-              "durationMs": 86400000
-            }
-          }
-        ],
-        "style": "pills",
-        "queryType": 0,
-        "resourceType": "microsoft.operationalinsights/workspaces"
-      },
-      "name": "parameters - 6"
     }
   ],
   "fallbackResourceIds": [
