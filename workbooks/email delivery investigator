@@ -124,18 +124,41 @@
             "name": "text - 0"
           },
           {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "73b7e638-a016-4698-a796-b5f4ee977e80",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "show_verizon",
+                  "label": "Show/Hide",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "value": "hide"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 3"
+          },
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "CiscoSEGEvent\r\n| where TimeGenerated {Timeframe}\r\n    and RecipientAddress contains \"{Recipient}\"\r\n    and (\r\n        MailFromAddress contains \"{Sender}\"\r\n        or ReplyToAddress contains \"{Sender}\"\r\n    )\r\n    and Subject contains \"{Subject}\"\r\n| order by TimeGenerated desc\r\n| project-reorder TimeGenerated\r\n    , MailFromAddress\r\n    , RecipientAddress\r\n    , Subject\r\n    , ReplyToAddress\r\n    , DvcAction\r\n    , EventOriginalUid\r\n    , AntiSpamVerdict\r\n    , AntiVirusVerdict\r\n    , AmpVerdict\r\n    , DkimVerdict\r\n    , DmarcVerdict\r\n    , SrcIp\r\n| project-away SenderFromAddress\r\n| project-rename Action = DvcAction\r\n    , InternetMsgId = EventOriginalUid\r\n",
+              "query": "CiscoSEGEvent\r\n| where TimeGenerated {Timeframe}\r\n    and RecipientAddress contains \"{Recipient}\"\r\n    and (\r\n        MailFromAddress contains \"{Sender}\"\r\n        or ReplyToAddress contains \"{Sender}\"\r\n    )\r\n    and Subject contains \"{Subject}\"\r\n| order by TimeGenerated desc\r\n| project-reorder TimeGenerated\r\n    , MailFromAddress\r\n    , RecipientAddress\r\n    , Subject\r\n    , ReplyToAddress\r\n    , DvcAction\r\n    , EventOriginalUid\r\n    , AntiSpamVerdict\r\n    , AntiVirusVerdict\r\n    , AmpVerdict\r\n    , DkimVerdict\r\n    , DmarcVerdict\r\n    , SrcIp\r\n    , ESAMID\r\n| project-away SenderFromAddress\r\n| project-rename Action = DvcAction\r\n    , InternetMesssageId = EventOriginalUid\r\n",
               "size": 0,
               "title": "Verizon Gateway Single Line Logs",
               "exportedParameters": [
-                {
-                  "fieldName": "InternetMsgId",
-                  "parameterName": "InternetMsgId",
-                  "parameterType": 1
-                },
                 {
                   "fieldName": "EventStartTime",
                   "parameterName": "EventStartTime",
@@ -155,8 +178,25 @@
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
               "gridSettings": {
-                "rowLimit": 5000
-              }
+                "rowLimit": 5000,
+                "sortBy": [
+                  {
+                    "itemKey": "ESAMID",
+                    "sortOrder": 2
+                  }
+                ]
+              },
+              "sortBy": [
+                {
+                  "itemKey": "ESAMID",
+                  "sortOrder": 2
+                }
+              ]
+            },
+            "conditionalVisibility": {
+              "parameterName": "show_verizon",
+              "comparison": "isEqualTo",
+              "value": "show"
             },
             "name": "CiscoSEGEvent"
           },
@@ -174,11 +214,194 @@
               "resourceType": "microsoft.operationalinsights/workspaces",
               "visualization": "table"
             },
+            "conditionalVisibilities": [
+              {
+                "parameterName": "MID",
+                "comparison": "isNotEqualTo",
+                "value": ""
+              },
+              {
+                "parameterName": "show_verizon",
+                "comparison": "isEqualTo",
+                "value": "show"
+              }
+            ],
             "name": "Verizon Detailed Logs"
           }
         ]
       },
       "name": "Verizon Logs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Exchange Online Logs\r\nThese logs come from Exchange Online. They are subject to up to 15 minutes of ingestion latency."
+            },
+            "name": "text - 0"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "9c829dfa-9b03-406e-b28d-8e782e7fb5de",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "eop_show",
+                  "label": "Show/Hide",
+                  "type": 10,
+                  "isRequired": true,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "value": "hide"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 4"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "EmailEvents\r\n| where TimeGenerated {Timeframe}\r\n    and RecipientEmailAddress contains \"{Recipient}\"\r\n    and (\r\n        SenderFromAddress contains \"{Sender}\"\r\n        or SenderMailFromAddress contains \"{Sender}\"\r\n    )\r\n    and Subject contains \"{Subject}\"\r\n| order by TimeGenerated desc\r\n| project-reorder TimeGenerated\r\n    , SenderMailFromAddress\r\n    , RecipientEmailAddress\r\n    , Subject\r\n    , SenderFromAddress\r\n    , DeliveryAction\r\n    , DeliveryLocation\r\n    , InternetMessageId\r\n    , ConfidenceLevel\r\n    , DetectionMethods\r\n    , ThreatTypes\r\n    , ThreatNames\r\n    , SenderIPv4\r\n    , EmailActionPolicy\r\n    , UserLevelAction\r\n    , UserLevelPolicy\r\n    , AuthenticationDetails\r\n| project-away TenantId",
+              "size": 0,
+              "timeContextFromParameter": "Timeframe",
+              "exportFieldName": "NetworkMessageId",
+              "exportParameterName": "NetworkMessageId",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "gridSettings": {
+                "rowLimit": 5000
+              }
+            },
+            "conditionalVisibility": {
+              "parameterName": "eop_show",
+              "comparison": "isEqualTo",
+              "value": "show"
+            },
+            "name": "query - 1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "EmailAttachmentInfo\r\n| where NetworkMessageId == \"{NetworkMessageId}\"\r\n| project FileName, FileType, FileSize",
+              "size": 0,
+              "title": "EmailAttachmentInfo",
+              "timeContextFromParameter": "Timeframe",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "conditionalVisibilities": [
+              {
+                "parameterName": "NetworkMessageId",
+                "comparison": "isNotEqualTo"
+              },
+              {
+                "parameterName": "eop_show",
+                "comparison": "isEqualTo",
+                "value": "show"
+              }
+            ],
+            "name": "EmailAttachmentInfo"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "EmailPostDeliveryEvents\r\n| where NetworkMessageId == \"{NetworkMessageId}\"\r\n| project Action, ActionTrigger, ActionType, DeliveryLocation, ThreatTypes, DetectionMethods",
+              "size": 0,
+              "title": "EmailPostDeliveryEvents",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "conditionalVisibilities": [
+              {
+                "parameterName": "NetworkMessageId",
+                "comparison": "isNotEqualTo"
+              },
+              {
+                "parameterName": "eop_show",
+                "comparison": "isEqualTo",
+                "value": "show"
+              }
+            ],
+            "name": "EmailPostDeliveryEvents"
+          }
+        ]
+      },
+      "name": "group - 3"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": ""
+            },
+            "name": "text - 0"
+          }
+        ]
+      },
+      "name": "Exchange On-premises Logs"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Exchange on-premises logs\r\nThese are the same as what you get from the Get-MessageTrackingLog Exchange CmdLet"
+      },
+      "name": "text - 5"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "4f2622a9-2ecd-4763-830f-cdc209419d21",
+            "version": "KqlParameterItem/1.0",
+            "name": "onprem_show",
+            "label": "Show/Hide",
+            "type": 10,
+            "isRequired": true,
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "jsonData": "[\r\n    {\"value\":\"show\", \"label\":\"Show\", \"selected\":true},\r\n    {\"value\":\"hide\", \"label\":\"Hide\"}\r\n]",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "parameters - 6"
     }
   ],
   "fallbackResourceIds": [
